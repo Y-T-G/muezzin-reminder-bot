@@ -15,7 +15,8 @@ logger = logging.getLogger(__name__)
 
 pref = Preferences(filename="preferences.py")
 
-bot = AsyncTeleBot(os.getenv("TELEGRAM_BOT_API_KEY"), parse_mode=None)
+token = os.getenv('TELEGRAM_BOT_API_KEY')
+bot = AsyncTeleBot(token, parse_mode=None)
 
 PRAYERS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]
 API_ENDPOINT = "https://waktu-solat-api.herokuapp.com/api/v1"
@@ -24,10 +25,10 @@ ZONES = request.json()["data"]["zon"]
 timers = dict()
 
 WEBHOOK_HOST = 'muezzin-reminder-bot.herokuapp.com'
-WEBHOOK_PORT = int(os.getenv('PORT', 8443))  # 443, 80, 88 or 8443 (port need to be 'open')
-WEBHOOK_LISTEN = '0.0.0.0'  # In some VPS you may need to put here the IP addr
-WEBHOOK_URL_BASE = "https://{}:{}".format(WEBHOOK_HOST, WEBHOOK_PORT)
-WEBHOOK_URL_PATH = "/{}/".format(os.getenv('TELEGRAM_BOT_API_KEY'))
+WEBHOOK_PORT = int(os.getenv('PORT', 8443))
+WEBHOOK_LISTEN = '0.0.0.0'
+WEBHOOK_URL_BASE = "https://{}:{}".format(WEBHOOK_HOST, 80)
+WEBHOOK_URL_PATH = "/{}/".format(token)
 
 class Timer:
     #https://stackoverflow.com/a/45430833
