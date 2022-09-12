@@ -27,7 +27,7 @@ timers = dict()
 WEBHOOK_HOST = 'muezzin-reminder-bot.herokuapp.com'
 WEBHOOK_PORT = int(os.getenv('PORT', 8443))
 WEBHOOK_LISTEN = '0.0.0.0'
-WEBHOOK_URL_BASE = "https://{}:{}".format(WEBHOOK_HOST, 80)
+WEBHOOK_URL_BASE = "https://{}".format(WEBHOOK_HOST)
 WEBHOOK_URL_PATH = "/{}/".format(token)
 
 class Timer:
