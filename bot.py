@@ -13,6 +13,21 @@ PRAYERS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]
 API_ENDPOINT = "https://waktu-solat-api.herokuapp.com/api/v1"
 request = requests.get(f"{API_ENDPOINT}/zones.json")
 ZONES = request.json()["data"]["zon"]
+timers = dict()
+
+class Timer:
+    #https://stackoverflow.com/a/45430833
+    def __init__(self, timeout, callback):
+        self._timeout = timeout
+        self._callback = callback
+        self._task = asyncio.ensure_future(self._job())
+
+    async def _job(self):
+        await asyncio.sleep(self._timeout)
+        await self._callback()
+
+    def cancel(self):
+        self._task.cancel()
 
 
 class BotSettings:
@@ -23,6 +38,7 @@ class BotSettings:
         self.schedule = {prayer: None for prayer in PRAYERS}
         self.chatid = chatid
         self.alerts_enabled = False
+        self.timer = None
         self.fetch_preferences()
 
     def fetch_preferences(self):
@@ -114,6 +130,9 @@ async def enable_alerts(context):
 
     settings = BotSettings(context.chat.id)
 
+    if timers[settings.chatid] is not None:
+        timers[settings.chatid].cancel()
+
     if not ZONES:
         text = "Bot not started. Start the bot by sending /start."
     else:
@@ -135,7 +154,7 @@ async def enable_alerts(context):
 
 
 async def create_alert(context, settings, time_to_wait):
-    await asyncio.sleep(time_to_wait)
+    timers[settings.chatid] = settings.timer = Timer(time_to_wait)
 
     prayer_name = PRAYERS[(settings.current_prayer_num + 1) % 5]
     print(settings.current_prayer_num)
@@ -145,11 +164,13 @@ async def create_alert(context, settings, time_to_wait):
     if muezzin is not None:
         text += f"@{muezzin} "
 
-    text += f"{prayer_name} in *{settings.alert_time // 60} minutes*."
+    text += f"{prayer_name} in *{settings.alert_time // 60} minutes*\."
 
     await bot.send_message(context.chat.id, text, parse_mode="MarkdownV2")
 
     settings.current_prayer_num += 1
+
+    timers[settings.chatid] = settings.timer = Timer(settings.alert_time + 5)
 
 
 async def set_alert(context, settings):
