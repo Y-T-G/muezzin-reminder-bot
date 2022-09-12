@@ -1,3 +1,4 @@
+import telebot
 from telebot.async_telebot import AsyncTeleBot
 import requests
 import asyncio
