@@ -22,6 +22,12 @@ request = requests.get(f"{API_ENDPOINT}/zones.json")
 ZONES = request.json()["data"]["zon"]
 timers = dict()
 
+WEBHOOK_HOST = 'muezzin-reminder-bot.herokuapp.com'
+WEBHOOK_PORT = 8443  # 443, 80, 88 or 8443 (port need to be 'open')
+WEBHOOK_LISTEN = '0.0.0.0'  # In some VPS you may need to put here the IP addr
+WEBHOOK_URL_BASE = "https://{}:{}".format(WEBHOOK_HOST, WEBHOOK_PORT)
+WEBHOOK_URL_PATH = "/{}/".format(os.getenv('TELEGRAM_BOT_API_KEY'))
+
 class Timer:
     #https://stackoverflow.com/a/45430833
     def __init__(self, timeout, callback=None, *args, **kwargs):
@@ -231,6 +237,16 @@ async def help(message):
 
     await bot.reply_to(message, text, parse_mode="MarkdownV2")
 
+# Process webhook calls
+async def handle(request):
+    if request.match_info.get('token') == bot.token:
+        request_body_dict = await request.json()
+        update = telebot.types.Update.de_json(request_body_dict)
+        asyncio.ensure_future(bot.process_new_updates([update]))
+        return web.Response()
+    else:
+        return web.Response(status=403)
+
 # Remove webhook and closing session before exiting
 async def shutdown(app):
     logger.info('Shutting down: removing webhook')
@@ -240,23 +256,7 @@ async def shutdown(app):
 
 
 async def setup():
-    # Remove webhook, it fails sometimes the set if there is a previous webhook
-    logger.info('Starting up: removing old webhook')
-    await bot.remove_webhook()
-    # Set webhook
-    logger.info('Starting up: setting webhook')
-    await bot.set_webhook(url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH,
-                certificate=open(WEBHOOK_SSL_CERT, 'r'))
-    app = web.Application()
-    app.router.add_post('/{token}/', handle)
-    app.on_cleanup.append(shutdown)
-    return app
-
-
-if __name__ == '__main__':
-
     token = os.getenv('TELEGRAM_BOT_API_KEY')
-    port = int(os.environ.get('PORT', 5000))
     bot = AsyncTeleBot(token, parse_mode=None)
 
     bot.register_message_handler(initialize, commands=["start"])
@@ -264,9 +264,25 @@ if __name__ == '__main__':
     bot.register_message_handler(enable_alerts, commands=["enable"])
     bot.register_message_handler(set_muezzin, commands=["set_muezzin"])
     bot.register_message_handler(send_schedule, commands=["show_schedule"])
-    bot.register_message_handler(list_zones, commands=["list_zones"])
+    bot.register_message_handler(list_zones, commands=["list_zones"]) 
 
-    bot.start_webhook(listen="0.0.0.0",
-                          port=port,
-                          url_path=token)
-    bot.set_webhook('https://muezzin-reminder-bot.herokuapp.com/' + token)
+    # Remove webhook, it fails sometimes the set if there is a previous webhook
+    logger.info('Starting up: removing old webhook')
+    await bot.remove_webhook()
+    # Set webhook
+    logger.info('Starting up: setting webhook')
+    print(WEBHOOK_URL_BASE + WEBHOOK_URL_PATH)
+    await bot.set_webhook(url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH)
+    app = web.Application()
+    app.router.add_post('/{token}/', handle)
+    app.on_cleanup.append(shutdown)
+    return app
+
+
+if __name__ == '__main__':
+    # Start aiohttp server
+    web.run_app(
+        setup(),
+        host=WEBHOOK_LISTEN,
+        port=WEBHOOK_PORT
+    )
