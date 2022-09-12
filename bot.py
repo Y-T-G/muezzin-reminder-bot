@@ -130,7 +130,7 @@ async def enable_alerts(context):
 
     settings = BotSettings(context.chat.id)
 
-    if timers[settings.chatid] is not None:
+    if timers.get(settings.chatid) is not None:
         timers[settings.chatid].cancel()
 
     if not ZONES:
