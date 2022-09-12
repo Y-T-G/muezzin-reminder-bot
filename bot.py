@@ -17,14 +17,14 @@ timers = dict()
 
 class Timer:
     #https://stackoverflow.com/a/45430833
-    def __init__(self, timeout, callback):
+    def __init__(self, timeout, callback=None, *args, **kwargs):
         self._timeout = timeout
         self._callback = callback
-        self._task = asyncio.ensure_future(self._job())
+        self._task = asyncio.ensure_future(self._job(**kwargs))
 
-    async def _job(self):
+    async def _job(self, **kwargs):
         await asyncio.sleep(self._timeout)
-        await self._callback()
+        await self._callback(**kwargs)
 
     def cancel(self):
         self._task.cancel()
@@ -128,7 +128,7 @@ async def intialize(context):
 
 @bot.message_handler(commands=["enable"])
 async def enable_alerts(context):
-
+    global timers
     settings = BotSettings(context.chat.id)
 
     if timers.get(settings.chatid) is not None:
@@ -154,9 +154,7 @@ async def enable_alerts(context):
                 await set_alert(context, settings)
 
 
-async def create_alert(context, settings, time_to_wait):
-    timers[settings.chatid] = settings.timer = Timer(time_to_wait)
-
+async def create_alert(context, settings):
     prayer_name = PRAYERS[(settings.current_prayer_num + 1) % 5]
     print(settings.current_prayer_num)
     text = ""
@@ -171,10 +169,11 @@ async def create_alert(context, settings, time_to_wait):
 
     settings.current_prayer_num += 1
 
-    timers[settings.chatid] = settings.timer = Timer(settings.alert_time + 5)
+    asyncio.sleep(settings.alert_time + 5)
 
 
 async def set_alert(context, settings):
+    global timers
     prayer_times = requests.get(
         f"{API_ENDPOINT}/prayer_times.json?zon={settings.selected_zone}"
     ).json()["data"][0]["waktu_solat"]
@@ -194,11 +193,12 @@ async def set_alert(context, settings):
             hour=0, minute=0, second=0, microsecond=0
         )
         sleep_duration = midnight.timestamp() - now.timestamp()
-        await asyncio.sleep(sleep_duration)
+        asyncio.sleep(sleep_duration)
         await set_alert(context, settings)
     else:
         time_to_wait -= settings.alert_time
-        await create_alert(context, settings, time_to_wait)
+        timers[settings.chatid] = settings.timer = Timer(time_to_wait, create_alert, context=context, settings=settings)
+        await asyncio.sleep(time_to_wait) # wait before exiting
 
 
 @bot.message_handler(commands=["set_muezzin"])
