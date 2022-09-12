@@ -24,7 +24,7 @@ ZONES = request.json()["data"]["zon"]
 timers = dict()
 
 WEBHOOK_HOST = 'muezzin-reminder-bot.herokuapp.com'
-WEBHOOK_PORT = 8443  # 443, 80, 88 or 8443 (port need to be 'open')
+WEBHOOK_PORT = os.getenv('PORT', 8443)  # 443, 80, 88 or 8443 (port need to be 'open')
 WEBHOOK_LISTEN = '0.0.0.0'  # In some VPS you may need to put here the IP addr
 WEBHOOK_URL_BASE = "https://{}:{}".format(WEBHOOK_HOST, WEBHOOK_PORT)
 WEBHOOK_URL_PATH = "/{}/".format(os.getenv('TELEGRAM_BOT_API_KEY'))
