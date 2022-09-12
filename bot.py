@@ -74,6 +74,7 @@ def format_time(time):
 
 def get_next_prayer_time(prayer_times, settings):
     time_now = datetime.today().timestamp()
+    next_prayer_num = 0
     for i, prayer in enumerate(prayer_times):
         if format_time(prayer["time"]) > time_now:
             next_prayer_num = i
