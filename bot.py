@@ -115,12 +115,12 @@ async def intialize(context):
 
     settings = BotSettings(context.chat.id)
 
-    text = "‏اَلسَلامُ عَلَيْكُم وَرَحْمَةُ اَللهِ وَبَرَكاتُهُ‎.\nThe Muezzin Reminder Bot is online."
+    text = "‏اَلسَلامُ عَلَيْكُم وَرَحْمَةُ اَللهِ وَبَرَكاتُهُ‎.\nThe Muezzin Reminder Bot is online\."
 
     if not settings.alerts_enabled:
-        text += ' To enable alerts, send "`/enable ZONE_NAME`".'
+        text += ' To enable alerts, send "`/enable ZONE_NAME`"\.'
 
-    await bot.reply_to(context, text)
+    await bot.reply_to(context, text, parse_mode="MarkdownV2")
 
     await list_zones(context)
 
@@ -134,7 +134,7 @@ async def enable_alerts(context):
         timers[settings.chatid].cancel()
 
     if not ZONES:
-        text = "Bot not started. Start the bot by sending /start."
+        text = "Bot not started\. Start the bot by sending `/start`\."
     else:
         selected = context.text.split(" ")[1]
 
@@ -142,11 +142,11 @@ async def enable_alerts(context):
             settings.selected_zone = selected
             settings.alerts_enabled = True
             settings.update_preferences()
-            text = f"Alerts enabled for {selected}. Alert will be sent 10 minutes before the next azan."
+            text = f"Alerts enabled for {selected}\. Alert will be sent 10 minutes before the next azan\."
         else:
-            text = "Zone not found. Make sure the selected zone is valid. View valid zones by sending /list_zones"
+            text = "Zone not found\. Make sure the selected zone is valid\. View valid zones by sending `/list_zones`\."
 
-        await bot.reply_to(context, text)
+        await bot.reply_to(context, text, parse_mode="MarkdownV2")
 
         if settings.alerts_enabled:
             while True:
@@ -210,9 +210,9 @@ async def set_muezzin(message):
         prayer = msg_txt[1]
         user = msg_txt[2]
         settings.schedule[prayer] = user
-        text = f"@{user} assigned as muezzin for {prayer} prayer."
+        text = f"@{user} assigned as muezzin for {prayer} prayer\."
     else:
-        text = f"Bad format. Usage: `/set_muezzin PRAYER_NAME USERNAME`"
+        text = f"Bad format\. Usage: `/set_muezzin PRAYER_NAME USERNAME`\."
 
     settings.update_preferences()
 
