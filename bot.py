@@ -89,7 +89,7 @@ def time_to_mili(time):
 
 
 def format_time_12hours(time):
-    return datetime.strptime(time, "%H:%M").strftime("%I:%M %p")
+    return datetime.strptime(time, "%H:%M").strftime("%I:%M%p")
 
 
 def get_next_prayer_time(prayer_times, settings):
