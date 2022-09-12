@@ -80,7 +80,7 @@ class BotSettings:
         pref.set_preferences(prefs)
 
 
-def format_time(time):
+def time_to_mili(time):
     date = datetime.now().date()
     timestamp = datetime.combine(
         date, datetime.strptime(time, "%H:%M").time()
@@ -88,17 +88,21 @@ def format_time(time):
     return timestamp
 
 
+def format_time_12hours(time):
+    return datetime.strptime(time, "%H:%M").strftime("%I:%M %p")
+
+
 def get_next_prayer_time(prayer_times, settings):
     time_now = datetime.today().timestamp()
     next_prayer_num = 0
     for i, prayer in enumerate(prayer_times):
-        if format_time(prayer["time"]) > time_now:
+        if time_to_mili(prayer["time"]) > time_now:
             next_prayer_num = i
             settings.current_prayer_num = i - 1
             break
     print(PRAYERS[next_prayer_num])
     settings.update_preferences()
-    next_prayer_time = format_time(prayer_times[next_prayer_num]["time"])
+    next_prayer_time = time_to_mili(prayer_times[next_prayer_num]["time"])
     return next_prayer_time
 
 
@@ -119,6 +123,22 @@ async def send_schedule(context):
     text = "*Muezzin Schedule:*\n\n"
     for prayer, muezzin in settings.schedule.items():
         text += f"*{prayer}*: @{muezzin}\n"
+
+    text = text[:-1]  # remove extra \n
+
+    await bot.send_message(settings.chatid, text, parse_mode="MarkdownV2")
+
+
+async def send_prayer_times(context):
+    settings = BotSettings(context.chat.id)
+
+    prayer_times = requests.get(
+        f"{API_ENDPOINT}/prayer_times.json?zon={settings.selected_zone}"
+    ).json()["data"][0]["waktu_solat"]
+
+    text = "*Prayer Times:*\n\n"
+    for prayer in prayer_times:
+        text += f"*{prayer['name']}*: {format_time_12hours(prayer['time'])}\n"
 
     text = text[:-1]  # remove extra \n
 
@@ -175,7 +195,7 @@ async def create_alert(context, settings):
     if muezzin is not None:
         text += f"@{muezzin} "
 
-    text += f"{prayer_name} in *{settings.alert_time // 60} minutes*\."
+    text += f"{prayer_name} in *{settings.alert_time // 60} minutes*\ at *{format_time_12hours(settings.current_prayer_num['time'])}*."
 
     await bot.send_message(context.chat.id, text, parse_mode="MarkdownV2")
 
@@ -186,15 +206,15 @@ async def create_alert(context, settings):
 
 async def set_alert(context, settings):
     global timers
-    prayer_times = requests.get(
+    settings.prayer_times = requests.get(
         f"{API_ENDPOINT}/prayer_times.json?zon={settings.selected_zone}"
     ).json()["data"][0]["waktu_solat"]
 
-    del prayer_times[0]  # remove imsak
-    del prayer_times[1]  #  remove syuruk
+    del settings.prayer_times[0]  # remove imsak
+    del settings.prayer_times[1]  #  remove syuruk
 
     time_to_wait = (
-        get_next_prayer_time(prayer_times, settings) - datetime.now().timestamp()
+        get_next_prayer_time(settings.prayer_times, settings) - datetime.now().timestamp()
     )
 
     print(settings.current_prayer_num)
@@ -236,7 +256,8 @@ async def help(message):
                       `/set_muezzin PRAYER_NAME USERNAME` - Assign a muezzin for a particular prayer\.\n\
                       `/start` - Start the bot\.\n\
                       `/list_zones` - View available zones\.\n\
-                      `/show_schedule` - View current muezzin schedule\."
+                      `/show_schedule` - View current muezzin schedule\.\n\
+                      `/show_prayer_times` - View prayer times for your zone\."
 
     await bot.reply_to(message, text, parse_mode="MarkdownV2")
 
@@ -265,6 +286,7 @@ async def setup():
     bot.register_message_handler(set_muezzin, commands=["set_muezzin"])
     bot.register_message_handler(send_schedule, commands=["show_schedule"])
     bot.register_message_handler(list_zones, commands=["list_zones"]) 
+    bot.register_message_handler(send_prayer_times, commands=["show_prayer_times"]) 
 
     # Remove webhook, it fails sometimes the set if there is a previous webhook
     logger.info('Starting up: removing old webhook')
