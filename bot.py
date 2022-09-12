@@ -138,7 +138,7 @@ async def send_prayer_times(context):
 
     text = "*Prayer Times:*\n\n"
     for prayer in prayer_times:
-        text += f"*{prayer['name']}*: {format_time_12hours(prayer['time'])}\n"
+        text += f"*{prayer['name'].title()}*: {format_time_12hours(prayer['time'])}\n"
 
     text = text[:-1]  # remove extra \n
 
