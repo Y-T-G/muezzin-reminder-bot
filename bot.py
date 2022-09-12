@@ -4,6 +4,13 @@ import asyncio
 from datetime import datetime, timedelta
 from pypref import SinglePreferences as Preferences
 import os
+import logging
+
+# Enable logging
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    level=logging.INFO)
+
+logger = logging.getLogger(__name__)
 
 pref = Preferences(filename="preferences.py")
 
@@ -86,7 +93,6 @@ def get_next_prayer_time(prayer_times, settings):
     return next_prayer_time
 
 
-@bot.message_handler(commands=["list_zones"])
 async def list_zones(context):
     text = "Availabled zones:\n\n"
 
@@ -98,7 +104,6 @@ async def list_zones(context):
     await bot.send_message(context.chat.id, text)
 
 
-@bot.message_handler(commands=["show_schedule"])
 async def send_schedule(context):
     settings = BotSettings(context.chat.id)
 
@@ -111,8 +116,7 @@ async def send_schedule(context):
     await bot.send_message(settings.chatid, text, parse_mode="MarkdownV2")
 
 
-@bot.message_handler(commands=["start"])
-async def intialize(context):
+async def initialize(context):
 
     settings = BotSettings(context.chat.id)
 
@@ -126,7 +130,6 @@ async def intialize(context):
     await list_zones(context)
 
 
-@bot.message_handler(commands=["enable"])
 async def enable_alerts(context):
     global timers
     settings = BotSettings(context.chat.id)
@@ -201,7 +204,6 @@ async def set_alert(context, settings):
         await asyncio.sleep(time_to_wait) # wait before exiting
 
 
-@bot.message_handler(commands=["set_muezzin"])
 async def set_muezzin(message):
 
     settings = BotSettings(message.chat.id)
@@ -219,7 +221,7 @@ async def set_muezzin(message):
 
     await bot.reply_to(message, text, parse_mode="MarkdownV2")
 
-@bot.message_handler(commands=["help"])
+
 async def help(message):
     text = "*Usage:*\n`/enable ZONE_NAME` - Enable alerts for the particular zone.\n\
                       `/set_muezzin PRAYER_NAME USERNAME` - Assign a muezzin for a particular prayer.\n\
@@ -229,4 +231,42 @@ async def help(message):
 
     await bot.reply_to(message, text, parse_mode="MarkdownV2")
 
-asyncio.run(bot.polling())
+# Remove webhook and closing session before exiting
+async def shutdown(app):
+    logger.info('Shutting down: removing webhook')
+    await bot.remove_webhook()
+    logger.info('Shutting down: closing session')
+    await bot.close_session()
+
+
+async def setup():
+    # Remove webhook, it fails sometimes the set if there is a previous webhook
+    logger.info('Starting up: removing old webhook')
+    await bot.remove_webhook()
+    # Set webhook
+    logger.info('Starting up: setting webhook')
+    await bot.set_webhook(url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH,
+                certificate=open(WEBHOOK_SSL_CERT, 'r'))
+    app = web.Application()
+    app.router.add_post('/{token}/', handle)
+    app.on_cleanup.append(shutdown)
+    return app
+
+
+if __name__ == '__main__':
+
+    token = os.getenv('TELEGRAM_BOT_API_KEY')
+    port = int(os.environ.get('PORT', 5000))
+    bot = AsyncTeleBot(token, parse_mode=None)
+
+    bot.register_message_handler(initialize, commands=["start"])
+    bot.register_message_handler(help, commands=["help"])
+    bot.register_message_handler(enable_alerts, commands=["enable"])
+    bot.register_message_handler(set_muezzin, commands=["set_muezzin"])
+    bot.register_message_handler(send_schedule, commands=["show_schedule"])
+    bot.register_message_handler(list_zones, commands=["list_zones"])
+
+    bot.start_webhook(listen="0.0.0.0",
+                          port=port,
+                          url_path=token)
+    bot.set_webhook('https://muezzin-reminder-bot.herokuapp.com/' + token)
