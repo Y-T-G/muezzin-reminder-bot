@@ -259,9 +259,6 @@ async def shutdown(app):
 
 
 async def setup():
-    token = os.getenv('TELEGRAM_BOT_API_KEY')
-    bot = AsyncTeleBot(token, parse_mode=None)
-
     bot.register_message_handler(initialize, commands=["start"])
     bot.register_message_handler(help, commands=["help"])
     bot.register_message_handler(enable_alerts, commands=["enable"])
