@@ -9,3 +9,5 @@ pyTelegramBotAPI - https://github.com/eternnoir/pyTelegramBotAPI
 Waktu Solat API - https://github.com/zaimramlan/waktu-solat-api
 
 PyPref - https://github.com/bachiraoun/pypref/
+
+Fly.io Deployment Guide - https://bakanim.xyz/posts/deploy-telegram-bot-to-fly-io/

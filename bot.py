@@ -25,8 +25,8 @@ request = requests.get(f"{API_ENDPOINT}/zones.json")
 ZONES = request.json()["data"]["zon"]
 timers = dict()
 
-WEBHOOK_HOST = 'muezzin-reminder-bot.herokuapp.com'
-WEBHOOK_PORT = int(os.getenv('PORT', 8443))
+WEBHOOK_HOST = 'muezzin-reminder-bot.fly.dev'
+WEBHOOK_PORT = int(os.getenv('PORT', 8080))
 WEBHOOK_LISTEN = '0.0.0.0'
 WEBHOOK_URL_BASE = "https://{}".format(WEBHOOK_HOST)
 WEBHOOK_URL_PATH = "/{}/".format(token)
