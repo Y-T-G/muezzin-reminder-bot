@@ -120,7 +120,7 @@ async def list_zones(context):
 async def send_schedule(context):
     settings = BotSettings(context.chat.id)
 
-    text = "*Muezzin Schedule:*\n\n"
+    text = "*Muezzin Schedule*\n\n"
     for prayer, muezzin in settings.schedule.items():
         text += f"*{prayer}*: @{muezzin}\n"
 
