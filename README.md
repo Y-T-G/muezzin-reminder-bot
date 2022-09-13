@@ -1,4 +1,4 @@
-# Muezzin Reminder Telgram Bot
+# Muezzin Reminder Telegram Bot
 
 Telegram bot for reminding volunteer muezzins to give the adhan.
 
