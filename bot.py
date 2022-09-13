@@ -195,7 +195,7 @@ async def create_alert(context, settings):
     if muezzin is not None:
         text += f"@{muezzin} "
 
-    text += f"{prayer_name} in *{settings.alert_time // 60} minutes*\ at *{format_time_12hours(settings.current_prayer_num['time'])}*."
+    text += f"{prayer_name} in *{settings.alert_time // 60} minutes*\ at *{format_time_12hours(settings.prayer_times['time'])}*."
 
     await bot.send_message(context.chat.id, text, parse_mode="MarkdownV2")
 
