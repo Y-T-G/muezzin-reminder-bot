@@ -189,7 +189,9 @@ async def enable_alerts(context):
 
 async def create_alert(context, settings):
     prayer_name = PRAYERS[(settings.current_prayer_num + 1) % 5]
-    print(settings.current_prayer_num)
+
+    settings.current_prayer_num = (settings.current_prayer_num + 1) % 5
+
     text = ""
 
     muezzin = settings.schedule.get(prayer_name)
@@ -199,8 +201,6 @@ async def create_alert(context, settings):
     text += f"{prayer_name} in *{settings.alert_time // 60} minutes*\ at *{format_time_12hours(settings.prayer_times[settings.current_prayer_num]['time'])}*\."
 
     await bot.send_message(context.chat.id, text, parse_mode="MarkdownV2")
-
-    settings.current_prayer_num += 1
 
     asyncio.sleep(settings.alert_time + 5)
 
