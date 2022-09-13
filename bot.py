@@ -100,7 +100,7 @@ def get_next_prayer_time(prayer_times, settings):
             next_prayer_num = i
             settings.current_prayer_num = i - 1
             break
-    print(PRAYERS[next_prayer_num])
+    logger.info(PRAYERS[next_prayer_num])
     settings.update_preferences()
     next_prayer_time = time_to_mili(prayer_times[next_prayer_num]["time"])
     return next_prayer_time
