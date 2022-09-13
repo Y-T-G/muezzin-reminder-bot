@@ -184,7 +184,13 @@ async def enable_alerts(context):
 
         if settings.alerts_enabled:
             while True:
-                await set_alert(context, settings)
+                time_to_wait = await set_alert(context, settings)
+                
+                # wait before continuing
+                if time_to_wait > 0:
+                    await asyncio.sleep(time_to_wait)
+                else:
+                    await asyncio.sleep(-time_to_wait)
 
 
 async def create_alert(context, settings):
@@ -202,8 +208,6 @@ async def create_alert(context, settings):
 
     await bot.send_message(context.chat.id, text, parse_mode="MarkdownV2")
 
-    await asyncio.sleep(settings.alert_time + 5) # wait before exiting to avoid spam
-
 
 async def set_alert(context, settings):
     global timers
@@ -218,8 +222,6 @@ async def set_alert(context, settings):
         get_next_prayer_time(settings.prayer_times, settings) - datetime.now().timestamp()
     )
 
-    print(settings.current_prayer_num)
-
     if time_to_wait < 0:
         now = datetime.now()
         midnight = (now + timedelta(days=1)).replace(
@@ -231,7 +233,8 @@ async def set_alert(context, settings):
     else:
         time_to_wait -= settings.alert_time
         timers[settings.chatid] = settings.timer = Timer(time_to_wait, create_alert, context=context, settings=settings)
-        await asyncio.sleep(time_to_wait) # wait before exiting
+
+        return time_to_wait
 
 
 async def set_muezzin(message):
