@@ -136,7 +136,7 @@ async def send_prayer_times(context):
         f"{API_ENDPOINT}/prayer_times.json?zon={settings.selected_zone}"
     ).json()["data"][0]["waktu_solat"]
 
-    text = "*Prayer Times:*\n\n"
+    text = "*Prayer Times*\n\n"
     for prayer in prayer_times:
         text += f"*{prayer['name'].title()}*: {format_time_12hours(prayer['time'])}\n"
 
@@ -149,7 +149,7 @@ async def initialize(context):
 
     settings = BotSettings(context.chat.id)
 
-    text = "‏اَلسَلامُ عَلَيْكُم وَرَحْمَةُ اَللهِ وَبَرَكاتُهُ‎.\nThe Muezzin Reminder Bot is online\."
+    text = "‏اَلسَلامُ عَلَيْكُم وَرَحْمَةُ اَللهِ وَبَرَكاتُهُ‎\.\nThe Muezzin Reminder Bot is online\."
 
     if not settings.alerts_enabled:
         text += ' To enable alerts, send "`/enable ZONE_NAME`"\.'
@@ -195,7 +195,7 @@ async def create_alert(context, settings):
     if muezzin is not None:
         text += f"@{muezzin} "
 
-    text += f"{prayer_name} in *{settings.alert_time // 60} minutes*\ at *{format_time_12hours(settings.prayer_times['time'])}*."
+    text += f"{prayer_name} in *{settings.alert_time // 60} minutes*\ at *{format_time_12hours(settings.prayer_times[settings.current_prayer_num]['time'])}*\."
 
     await bot.send_message(context.chat.id, text, parse_mode="MarkdownV2")
 
