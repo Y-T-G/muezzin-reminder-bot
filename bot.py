@@ -202,7 +202,7 @@ async def create_alert(context, settings):
 
     await bot.send_message(context.chat.id, text, parse_mode="MarkdownV2")
 
-    asyncio.sleep(settings.alert_time + 5)
+    await asyncio.sleep(settings.alert_time + 5) # wait before exiting to avoid spam
 
 
 async def set_alert(context, settings):
