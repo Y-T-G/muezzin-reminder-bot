@@ -169,9 +169,10 @@ async def enable_alerts(context):
     if not ZONES:
         text = "Bot not started\. Start the bot by sending `/start`\."
     else:
-        selected = context.text.split(" ")[1]
+        args = context.text.split(" ")
 
-        if selected in ZONES:
+        if len(args) > 1 and args[1] in ZONES:
+            selected = args[1]
             settings.selected_zone = selected
             settings.alerts_enabled = True
             settings.update_preferences()
