@@ -120,7 +120,7 @@ async def list_zones(context):
     for zone in ZONES:
         text += "`" + zone + "`, "
 
-    text = text[:-2]  # remove trailing comma and space
+    text = text[:-2].replace('.', '\\.')  # remove trailing comma and space
 
     await bot.send_message(context.chat.id, text, parse_mode="MarkdownV2")
 
