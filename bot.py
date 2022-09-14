@@ -280,6 +280,7 @@ async def help(message):
 
     await bot.reply_to(message, text, parse_mode="MarkdownV2")
 
+
 # Process webhook calls
 async def handle(request):
     if request.match_info.get('token') == bot.token:
@@ -289,6 +290,7 @@ async def handle(request):
         return web.Response()
     else:
         return web.Response(status=403)
+
 
 # Remove webhook and closing session before exiting
 async def shutdown(app):
