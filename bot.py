@@ -31,6 +31,7 @@ WEBHOOK_LISTEN = '0.0.0.0'
 WEBHOOK_URL_BASE = "https://{}".format(WEBHOOK_HOST)
 WEBHOOK_URL_PATH = "/{}/".format(token)
 
+
 class Timer:
     #https://stackoverflow.com/a/45430833
     def __init__(self, timeout, callback=None, *args, **kwargs):
@@ -177,7 +178,7 @@ async def enable_alerts(context):
             settings.selected_zone = zone
             settings.alerts_enabled = True
             settings.update_preferences()
-            text = f"Alerts enabled for {zone}\. Alert will be sent *{settings.alert_time} minutes* before the next azan\."
+            text = f"Alerts enabled for {zone}\. Alert will be sent *{settings.alert_time // 60} minutes* before the next azan\."
         else:
             text = "Zone not found\. Make sure the selected zone is valid\. View valid zones by sending `/list_zones`\."
 
@@ -188,7 +189,7 @@ async def enable_alerts(context):
                 time_to_wait = await set_alert(context, settings)
 
                 logger.debug(f"Time to wait: {time_to_wait}")
-                
+
                 # wait before continuing
                 await asyncio.sleep(time_to_wait + settings.alert_time + 1)
 
@@ -199,8 +200,8 @@ async def change_alert_time(context, settings=None):
     message = context.text.split(" ")
 
     if len(message) > 1:
-        settings.alert_time = message[1] * 60
-        text = f"Alerts will be sent *{settings.alert_time} minutes* before the adhan\."
+        settings.alert_time = int(message[1]) * 60
+        text = f"Alerts will be sent *{settings.alert_time // 60} minutes* before the adhan\."
         settings.update_preferences()
     else:
         text = f"Bad format\."
