@@ -193,6 +193,21 @@ async def enable_alerts(context):
                 await asyncio.sleep(time_to_wait + settings.alert_time + 1)
 
 
+async def change_alert_time(context, settings=None):
+    settings = BotSettings(context.chat.id)
+
+    message = context.text.split(" ")
+
+    if len(message) > 1:
+        settings.alert_time = message[1] * 60
+        text = f"Alerts will be sent *{settings.alert_time} minutes* before the adhan\."
+        settings.update_preferences()
+    else:
+        text = f"Bad format\."
+
+    await bot.reply_to(context, text, parse_mode="MarkdownV2")
+
+
 async def create_alert(context, settings):
     prayer_name = PRAYERS[(settings.current_prayer_num + 1) % 5]
 
@@ -291,6 +306,7 @@ async def setup():
     bot.register_message_handler(send_schedule, commands=["show_schedule"])
     bot.register_message_handler(list_zones, commands=["list_zones"]) 
     bot.register_message_handler(send_prayer_times, commands=["show_prayer_times"]) 
+    bot.register_message_handler(change_alert_time, commands=["change_alert_time"]) 
 
     # Remove webhook, it fails sometimes the set if there is a previous webhook
     logger.info('Starting up: removing old webhook')
