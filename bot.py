@@ -185,6 +185,7 @@ async def enable_alerts(context):
             settings.selected_zone = zone
             settings.alerts_enabled = True
             settings.update_preferences()
+            zone = zone.replace('.', '\\.')
             text = f"Alerts enabled for {zone}\. Alert will be sent *{settings.alert_time // 60} minutes* before the next azan\."
         else:
             text = "Zone not found\. Make sure the selected zone is valid\. View valid zones by sending `/list_zones`\."
