@@ -164,6 +164,7 @@ async def enable_alerts(context):
     settings = BotSettings(context.chat.id)
 
     if timers.get(settings.chatid) is not None:
+        logger.info("Cancelling old timer")
         timers[settings.chatid].cancel()
 
     if not ZONES:
@@ -176,7 +177,7 @@ async def enable_alerts(context):
             settings.selected_zone = zone
             settings.alerts_enabled = True
             settings.update_preferences()
-            text = f"Alerts enabled for {zone}\. Alert will be sent 10 minutes before the next azan\."
+            text = f"Alerts enabled for {zone}\. Alert will be sent *{settings.alert_time} minutes* before the next azan\."
         else:
             text = "Zone not found\. Make sure the selected zone is valid\. View valid zones by sending `/list_zones`\."
 
@@ -185,12 +186,11 @@ async def enable_alerts(context):
         if settings.alerts_enabled:
             while True:
                 time_to_wait = await set_alert(context, settings)
+
+                logger.debug(f"Time to wait: {time_to_wait}")
                 
                 # wait before continuing
-                if time_to_wait > 0:
-                    await asyncio.sleep(time_to_wait)
-                else:
-                    await asyncio.sleep(-time_to_wait)
+                await asyncio.sleep(time_to_wait + settings.alert_time + 1)
 
 
 async def create_alert(context, settings):
@@ -204,7 +204,7 @@ async def create_alert(context, settings):
     if muezzin is not None:
         text += f"@{muezzin} "
 
-    text += f"{prayer_name} in *{settings.alert_time // 60} minutes*\ at *{format_time_12hours(settings.prayer_times[settings.current_prayer_num]['time'])}*\."
+    text += f"{prayer_name} in *{settings.alert_time // 60} minutes* at *{format_time_12hours(settings.prayer_times[settings.current_prayer_num]['time'])}*\."
 
     await bot.send_message(context.chat.id, text, parse_mode="MarkdownV2")
 
@@ -228,8 +228,8 @@ async def set_alert(context, settings):
             hour=0, minute=0, second=0, microsecond=0
         )
         sleep_duration = midnight.timestamp() - now.timestamp()
-        asyncio.sleep(sleep_duration)
-        await set_alert(context, settings)
+        await asyncio.sleep(sleep_duration)
+        return await set_alert(context, settings)
     else:
         time_to_wait -= settings.alert_time
         timers[settings.chatid] = settings.timer = Timer(time_to_wait, create_alert, context=context, settings=settings)
