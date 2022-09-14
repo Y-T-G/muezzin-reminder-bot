@@ -7,6 +7,7 @@ from pypref import SinglePreferences as Preferences
 import os
 import logging
 from aiohttp import web
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -56,6 +57,8 @@ class BotSettings:
         self.chatid = chatid
         self.alerts_enabled = False
         self.timer = None
+        self.response_timeout = 300
+        self.alert_noresponse = True
         self.fetch_preferences()
 
     def fetch_preferences(self):
@@ -68,6 +71,8 @@ class BotSettings:
             self.alert_time = prefs.get("alert_time", 600)
             self.selected_zone = prefs.get("selected_zone", "gombak")
             self.alerts_enabled = prefs.get("alerts_enabled", False)
+            self.response_timeout = prefs.get("response_timeout", 300)
+            self.alert_noresponse = prefs.get("alert_noresponse", True)
 
     def update_preferences(self):
         prefs = {
@@ -76,6 +81,8 @@ class BotSettings:
                 "alert_time": self.alert_time,
                 "selected_zone": self.selected_zone,
                 "alerts_enabled": self.alerts_enabled,
+                "response_timeout": self.response_timeout,
+                "alert_noresponse": self.alert_noresponse
             }
         }
         pref.set_preferences(prefs)
@@ -224,6 +231,9 @@ async def create_alert(context, settings):
 
     await bot.send_message(context.chat.id, text, parse_mode="MarkdownV2")
 
+    if muezzin is not None:
+        await ask_availability(context, settings, muezzin)
+
 
 async def set_alert(context, settings):
     global timers
@@ -271,6 +281,48 @@ async def set_muezzin(message):
     await bot.reply_to(message, text, parse_mode="MarkdownV2")
 
 
+async def alert_response_timeout(context, settings, muezzin):
+    if settings.alert_noresponse:
+        text = f"@{muezzin} did not confirm availability. Requesting other muezzins to be on standby."
+
+    await bot.send_message(context.chat.id, text)
+
+
+async def availabilty_handler(context):
+    settings = BotSettings(context.message.chat.id)
+    
+    prayer_name = PRAYERS[settings.current_prayer_num]
+    muezzin = settings.schedule.get(prayer_name)
+
+    if context.from_user.username == muezzin:
+        # Cancel reply timeout action
+        timers[f"{context.message.chat.id}_avail"].cancel()
+
+        text = None
+
+        if context.data == "not_available":
+            text = f"@{muezzin} is unavailable. Requesting other muezzins to be on standby."
+
+        if text is not None:
+            await bot.send_message(context.message.chat.id, text)
+        
+        await bot.delete_message(context.message.chat.id, context.message.id)
+
+
+async def ask_availability(context, settings, muezzin):
+    keyboard = InlineKeyboardMarkup()
+    keyboard.add(
+        InlineKeyboardButton(text="I'm available", callback_data="available"),
+        InlineKeyboardButton(text="I'm not available", callback_data="not_available"),
+    )
+
+    text = f'@{muezzin} Are you available?'
+
+    timers[f"{settings.chatid}_avail"] = Timer(settings.response_timeout, alert_response_timeout, context=context, settings=settings, muezzin=muezzin)
+
+    await bot.send_message(context.chat.id, text, reply_markup=keyboard)
+
+
 async def help(message):
     text = "*Usage:*\n`/enable ZONE_NAME` - Enable alerts for the particular zone\.\n\
                       `/set_muezzin PRAYER_NAME USERNAME` - Assign a muezzin for a particular prayer\.\n\
@@ -310,6 +362,7 @@ async def setup():
     bot.register_message_handler(list_zones, commands=["list_zones"]) 
     bot.register_message_handler(send_prayer_times, commands=["show_prayer_times"]) 
     bot.register_message_handler(change_alert_time, commands=["change_alert_time"]) 
+    bot.register_callback_query_handler(availabilty_handler, func=lambda call: True)
 
     # Remove webhook, it fails sometimes the set if there is a previous webhook
     logger.info('Starting up: removing old webhook')
