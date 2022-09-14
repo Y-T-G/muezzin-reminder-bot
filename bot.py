@@ -287,7 +287,9 @@ async def set_muezzin(message):
     await bot.reply_to(message, text, parse_mode="MarkdownV2")
 
 
-async def alert_response_timeout(context, settings, muezzin):
+async def alert_response_timeout(context, settings, muezzin, reply):
+    Timer(settings.alert_time - settings.response_timeout, bot.delete_message(reply.chat.id, reply.message_id))
+
     if settings.alert_noresponse:
         text = f"@{muezzin} did not confirm availability. Requesting other muezzins to be on standby."
 
@@ -324,10 +326,9 @@ async def ask_availability(context, settings, muezzin):
 
     text = f'@{muezzin} Are you available?'
 
-    timers[f"{settings.chatid}_avail"] = Timer(settings.response_timeout, alert_response_timeout, context=context, settings=settings, muezzin=muezzin)
+    reply = await bot.send_message(context.chat.id, text, reply_markup=keyboard)
 
-    await bot.send_message(context.chat.id, text, reply_markup=keyboard)
-
+    timers[f"{settings.chatid}_avail"] = Timer(settings.response_timeout, alert_response_timeout, context=context, settings=settings, muezzin=muezzin, reply=reply)
 
 async def help(message):
     text = "*Usage:*\n`/enable ZONE_NAME` - Enable alerts for the particular zone\.\n\
