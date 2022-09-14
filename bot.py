@@ -114,7 +114,7 @@ async def list_zones(context):
 
     text = text[:-2]  # remove trailing comma and space
 
-    await bot.send_message(context.chat.id, text)
+    await bot.send_message(context.chat.id, text, parse_mode="MarkdownV2")
 
 
 async def send_schedule(context):
@@ -170,13 +170,13 @@ async def enable_alerts(context):
         text = "Bot not started\. Start the bot by sending `/start`\."
     else:
         args = context.text.split(" ")
+        zone = " ".join(args[1:])
 
-        if len(args) > 1 and args[1] in ZONES:
-            selected = args[1]
-            settings.selected_zone = selected
+        if len(args) > 1 and zone in ZONES:
+            settings.selected_zone = zone
             settings.alerts_enabled = True
             settings.update_preferences()
-            text = f"Alerts enabled for {selected}\. Alert will be sent 10 minutes before the next azan\."
+            text = f"Alerts enabled for {zone}\. Alert will be sent 10 minutes before the next azan\."
         else:
             text = "Zone not found\. Make sure the selected zone is valid\. View valid zones by sending `/list_zones`\."
 
