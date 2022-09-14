@@ -171,10 +171,6 @@ async def enable_alerts(context):
     global timers
     settings = BotSettings(context.chat.id)
 
-    if timers.get(settings.chatid) is not None:
-        logger.info("Cancelling old timer")
-        timers[settings.chatid].cancel()
-
     if not ZONES:
         text = "Bot not started\. Start the bot by sending `/start`\."
     else:
@@ -192,14 +188,22 @@ async def enable_alerts(context):
 
         await bot.reply_to(context, text, parse_mode="MarkdownV2")
 
-        if settings.alerts_enabled:
-            while True:
-                time_to_wait = await set_alert(context, settings)
+        await run_alert()
 
-                logger.debug(f"Time to wait: {time_to_wait}")
 
-                # wait before continuing
-                await asyncio.sleep(time_to_wait + settings.alert_time + 1)
+async def run_alert(context, settings):
+    if timers.get(settings.chatid) is not None:
+        logger.info("Cancelling old timer")
+        timers[settings.chatid].cancel()
+
+    if settings.alerts_enabled:
+        while True:
+            time_to_wait = await set_alert(context, settings)
+
+            logger.debug(f"Time to wait: {time_to_wait}")
+
+            # wait before continuing
+            await asyncio.sleep(time_to_wait + settings.alert_time + 1)
 
 
 async def change_alert_time(context, settings=None):
@@ -211,6 +215,7 @@ async def change_alert_time(context, settings=None):
         settings.alert_time = int(message[1]) * 60
         text = f"Alerts will be sent *{settings.alert_time // 60} minutes* before the adhan\."
         settings.update_preferences()
+        run_alert(context, settings)
     else:
         text = f"Bad format\."
 
