@@ -3,6 +3,10 @@ kill_signal = "SIGINT"
 kill_timeout = 5
 processes = []
 
+[mounts]
+source="myapp_data"
+destination="/data"
+
 [[services]]
   internal_port = 8080
   protocol = "tcp"

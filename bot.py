@@ -15,7 +15,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 logger = logging.getLogger(__name__)
 
-pref = Preferences(filename="preferences.py")
+pref = Preferences(directory="/data", filename="preferences_mrb.py")
 
 token = os.getenv('TELEGRAM_BOT_API_KEY')
 bot = AsyncTeleBot(token, parse_mode=None)
