@@ -25,6 +25,8 @@ API_ENDPOINT = "https://waktu-solat-api.herokuapp.com/api/v1"
 request = requests.get(f"{API_ENDPOINT}/zones.json")
 ZONES = request.json()["data"]["zon"]
 timers = dict()
+run_ids = dict()
+run_id = 0
 
 WEBHOOK_HOST = 'muezzin-reminder-bot.fly.dev'
 WEBHOOK_PORT = int(os.getenv('PORT', 8080))
