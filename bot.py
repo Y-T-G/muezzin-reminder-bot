@@ -276,11 +276,11 @@ async def set_muezzin(message):
     msg_txt = message.text.split(" ")
     if len(msg_txt) >= 3 and msg_txt[1] in PRAYERS:
         prayer = msg_txt[1]
-        user = msg_txt[2]
-        settings.schedule[prayer] = user
-        text = f"@{user} assigned as muezzin for {prayer} prayer\."
+        muezzin = msg_txt[2] if msg_txt[2][0] != "@" else msg_txt[2][1:]
+        settings.schedule[prayer] = muezzin
+        text = f"@{muezzin} assigned as muezzin for {prayer} prayer\."
     else:
-        text = f"Bad format or incorrect prayer name\. Usage: `/set_muezzin PRAYER_NAME USERNAME`\."
+        text = "Bad format or incorrect prayer name\. Usage: `/set_muezzin PRAYER_NAME USERNAME`\."
 
     settings.update_preferences()
 
