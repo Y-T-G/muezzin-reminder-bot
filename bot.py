@@ -87,7 +87,10 @@ class BotSettings:
                 "alert_noresponse": self.alert_noresponse
             }
         }
-        pref.set_preferences(prefs)
+        if pref.preferences:
+            pref.update_preferences(prefs)
+        else:
+            pref.set_preferences(prefs)
 
 
 def time_to_mili(time):
