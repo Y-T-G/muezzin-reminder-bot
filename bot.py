@@ -343,10 +343,14 @@ async def ask_availability(context, settings, muezzin):
 
 
 async def restart_alerts():
+    tasks = []
     # restart all alerts
-    for chatid in pref:
+    for chatid in pref.preferences:
         settings = BotSettings(chatid)
-        await run_alert(None, settings)
+        task = asyncio.create_task(run_alert(None, settings))
+        tasks.append(task)
+
+    await asyncio.gather(*tasks)
 
 
 async def help(message):
@@ -390,9 +394,6 @@ async def setup():
     bot.register_message_handler(change_alert_time, commands=["change_alert_time"]) 
     bot.register_callback_query_handler(availabilty_handler, func=lambda call: True)
 
-    # restart alerts
-    await restart_alerts()
-
     # Remove webhook, it fails sometimes the set if there is a previous webhook
     logger.info('Starting up: removing old webhook')
     await bot.remove_webhook()
@@ -403,6 +404,10 @@ async def setup():
     app = web.Application()
     app.router.add_post('/{token}/', handle)
     app.on_cleanup.append(shutdown)
+
+    # restart alerts
+    asyncio.ensure_future(restart_alerts())
+
     return app
 
 
