@@ -188,7 +188,7 @@ async def enable_alerts(context):
 
         await bot.reply_to(context, text, parse_mode="MarkdownV2")
 
-        await run_alert()
+        await run_alert(context, settings)
 
 
 async def run_alert(context, settings):
@@ -197,13 +197,22 @@ async def run_alert(context, settings):
         timers[settings.chatid].cancel()
 
     if settings.alerts_enabled:
-        while True:
+        global run_id
+        run_id += 1
+        run_ids[settings.chatid] = init_id = curr_id = run_id
+
+        while init_id == curr_id:
             time_to_wait = await set_alert(context, settings)
 
             logger.debug(f"Time to wait: {time_to_wait}")
 
             # wait before continuing
             await asyncio.sleep(time_to_wait + settings.alert_time + 1)
+
+            curr_id = run_ids.get(settings.chatid)
+
+        else:
+            logger.info("Run ID changed")
 
 
 async def change_alert_time(context, settings=None):
@@ -260,8 +269,7 @@ async def set_alert(context, settings):
             hour=0, minute=0, second=0, microsecond=0
         )
         sleep_duration = midnight.timestamp() - now.timestamp()
-        await asyncio.sleep(sleep_duration)
-        return await set_alert(context, settings)
+        return sleep_duration
     else:
         time_to_wait -= settings.alert_time
         timers[settings.chatid] = settings.timer = Timer(time_to_wait, create_alert, context=context, settings=settings)
