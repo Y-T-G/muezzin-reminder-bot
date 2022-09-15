@@ -319,6 +319,9 @@ async def availabilty_handler(context):
         if context.data == "not_available":
             text = f"@{muezzin} is unavailable. Requesting other muezzins to be on standby."
 
+        elif context.data == "available":
+            text = f"@{muezzin} is available."
+
         if text is not None:
             await bot.send_message(context.message.chat.id, text)
         
