@@ -239,8 +239,6 @@ async def create_alert(context, settings):
     text = ""
 
     muezzin = settings.schedule.get(prayer_name)
-    if muezzin is not None:
-        text += f"@{muezzin} "
 
     text += f"{prayer_name} in *{settings.alert_time // 60} minutes* at *{format_time_12hours(settings.prayer_times[settings.current_prayer_num]['time'])}*\."
 
