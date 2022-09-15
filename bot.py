@@ -224,11 +224,11 @@ async def change_alert_time(context, settings=None):
         settings.alert_time = int(message[1]) * 60
         text = f"Alerts will be sent *{settings.alert_time // 60} minutes* before the adhan\."
         settings.update_preferences()
-        run_alert(context, settings)
+        await bot.reply_to(context, text, parse_mode="MarkdownV2")
+        await run_alert(context, settings)
     else:
-        text = f"Bad format\."
-
-    await bot.reply_to(context, text, parse_mode="MarkdownV2")
+        text = "Bad format\."
+        await bot.reply_to(context, text, parse_mode="MarkdownV2")
 
 
 async def create_alert(context, settings):
