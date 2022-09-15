@@ -244,7 +244,7 @@ async def create_alert(context, settings):
 
     text += f"{prayer_name} in *{settings.alert_time // 60} minutes* at *{format_time_12hours(settings.prayer_times[settings.current_prayer_num]['time'])}*\."
 
-    await bot.send_message(context.chat.id, text, parse_mode="MarkdownV2")
+    await bot.send_message(settings.chatid, text, parse_mode="MarkdownV2")
 
     if muezzin is not None:
         await ask_availability(context, settings, muezzin)
@@ -301,12 +301,12 @@ async def alert_response_timeout(context, settings, muezzin, reply):
     if settings.alert_noresponse:
         text = f"@{muezzin} did not confirm availability. Requesting other muezzins to be on standby."
 
-    await bot.send_message(context.chat.id, text)
+    await bot.send_message(settings.chatid, text)
 
 
 async def availabilty_handler(context):
     settings = BotSettings(context.message.chat.id)
-    
+
     prayer_name = PRAYERS[settings.current_prayer_num]
     muezzin = settings.schedule.get(prayer_name)
 
@@ -324,7 +324,7 @@ async def availabilty_handler(context):
 
         if text is not None:
             await bot.send_message(context.message.chat.id, text)
-        
+  
         await bot.delete_message(context.message.chat.id, context.message.id)
 
 
@@ -337,9 +337,17 @@ async def ask_availability(context, settings, muezzin):
 
     text = f'@{muezzin} Are you available?'
 
-    reply = await bot.send_message(context.chat.id, text, reply_markup=keyboard)
+    reply = await bot.send_message(settings.chatid, text, reply_markup=keyboard)
 
     timers[f"{settings.chatid}_avail"] = Timer(settings.response_timeout, alert_response_timeout, context=context, settings=settings, muezzin=muezzin, reply=reply)
+
+
+async def restart_alerts():
+    # restart all alerts
+    for chatid in pref:
+        settings = BotSettings(chatid)
+        await run_alert(None, settings)
+
 
 async def help(message):
     text = "*Usage:*\n`/enable ZONE_NAME` - Enable alerts for the particular zone\.\n\
@@ -381,6 +389,9 @@ async def setup():
     bot.register_message_handler(send_prayer_times, commands=["show_prayer_times"]) 
     bot.register_message_handler(change_alert_time, commands=["change_alert_time"]) 
     bot.register_callback_query_handler(availabilty_handler, func=lambda call: True)
+
+    # restart alerts
+    await restart_alerts()
 
     # Remove webhook, it fails sometimes the set if there is a previous webhook
     logger.info('Starting up: removing old webhook')
