@@ -308,27 +308,23 @@ async def alert_response_timeout(context, settings, muezzin, reply):
 
 
 async def availabilty_handler(context):
-    settings = BotSettings(context.message.chat.id)
+    muezzin = context.from_user.username
 
-    prayer_name = PRAYERS[settings.current_prayer_num]
-    muezzin = settings.schedule.get(prayer_name)
+    # Cancel reply timeout action
+    timers[f"{context.message.chat.id}_avail"].cancel()
 
-    if context.from_user.username == muezzin:
-        # Cancel reply timeout action
-        timers[f"{context.message.chat.id}_avail"].cancel()
+    text = None
 
-        text = None
+    if context.data == "not_available":
+        text = f"@{muezzin} is unavailable. Requesting other muezzins to be on standby."
 
-        if context.data == "not_available":
-            text = f"@{muezzin} is unavailable. Requesting other muezzins to be on standby."
+    elif context.data == "available":
+        text = f"@{muezzin} is available."
 
-        elif context.data == "available":
-            text = f"@{muezzin} is available."
+    if text is not None:
+        await bot.send_message(context.message.chat.id, text)
 
-        if text is not None:
-            await bot.send_message(context.message.chat.id, text)
-  
-        await bot.delete_message(context.message.chat.id, context.message.id)
+    await bot.delete_message(context.message.chat.id, context.message.id)
 
 
 async def ask_availability(context, settings, muezzin):
