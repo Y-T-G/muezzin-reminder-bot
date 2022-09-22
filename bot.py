@@ -311,7 +311,8 @@ async def availabilty_handler(context):
     muezzin = context.from_user.username
 
     # Cancel reply timeout action
-    timers[f"{context.message.chat.id}_avail"].cancel()
+    if timers.get(f"{context.message.chat.id}_avail"):
+        timers[f"{context.message.chat.id}_avail"].cancel()
 
     text = None
 
