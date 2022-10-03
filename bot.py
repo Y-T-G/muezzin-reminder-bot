@@ -24,6 +24,8 @@ PRAYERS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]
 API_ENDPOINT = "https://waktu-solat-api.herokuapp.com/api/v1"
 request = requests.get(f"{API_ENDPOINT}/zones.json")
 ZONES = request.json()["data"]["zon"]
+RETRY_TIMEOUT = 3600
+prayer_times_cache = dict()
 timers = dict()
 run_ids = dict()
 run_id = 0
@@ -143,18 +145,24 @@ async def send_schedule(context):
 
 
 async def send_prayer_times(context):
+    global prayer_times_cache
+
     settings = BotSettings(context.chat.id)
 
-    prayer_times = requests.get(
+    response = requests.get(
         f"{API_ENDPOINT}/prayer_times.json?zon={settings.selected_zone}"
-    ).json()["data"][0]["waktu_solat"]
+    )
 
+    if response.ok:
+        updated_times = response.json()["data"][0]["waktu_solat"]
+        if updated_times:
+            prayer_times_cache[settings.chatid] = updated_times
+
+    # Use existing prayer times if not available
     text = "*Prayer Times*\n\n"
-    for prayer in prayer_times:
+    for prayer in prayer_times_cache[settings.chatid]:
         text += f"*{prayer['name'].title()}*: {format_time_12hours(prayer['time'])}\n"
-
     text = text[:-1]  # remove extra \n
-
     await bot.send_message(settings.chatid, text, parse_mode="MarkdownV2")
 
 
@@ -255,29 +263,40 @@ async def create_alert(context, settings):
 
 async def set_alert(context, settings):
     global timers
-    settings.prayer_times = requests.get(
+
+    response = requests.get(
         f"{API_ENDPOINT}/prayer_times.json?zon={settings.selected_zone}"
-    ).json()["data"][0]["waktu_solat"]
-
-    del settings.prayer_times[0]  # remove imsak
-    del settings.prayer_times[1]  #  remove syuruk
-
-    time_to_wait = (
-        get_next_prayer_time(settings.prayer_times, settings) - datetime.now().timestamp()
     )
 
-    if time_to_wait < 0:
-        now = datetime.now()
-        midnight = (now + timedelta(days=1)).replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
-        sleep_duration = midnight.timestamp() - now.timestamp()
-        return sleep_duration
-    else:
-        time_to_wait -= settings.alert_time
-        timers[settings.chatid] = settings.timer = Timer(time_to_wait, create_alert, context=context, settings=settings)
+    if response.ok:
+        updated_times = response.json()["data"][0]["waktu_solat"]
+        if updated_times:
+            settings.prayer_times = updated_times
+            del settings.prayer_times[0]  # remove imsak
+            del settings.prayer_times[1]  #  remove syuruk
 
-        return time_to_wait
+    if settings.prayer_times:
+        time_to_wait = (
+            get_next_prayer_time(settings.prayer_times, settings)
+            - datetime.now().timestamp()
+        )
+
+        if time_to_wait < 0:
+            now = datetime.now()
+            midnight = (now + timedelta(days=1)).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+            sleep_duration = midnight.timestamp() - now.timestamp()
+            return sleep_duration
+        else:
+            time_to_wait -= settings.alert_time
+            timers[settings.chatid] = settings.timer = Timer(
+                time_to_wait, create_alert, context=context, settings=settings
+            )
+
+            return time_to_wait
+    else:
+        return RETRY_TIMEOUT
 
 
 async def set_muezzin(message):
