@@ -10,14 +10,15 @@ from aiohttp import web
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # Enable logging
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO)
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+)
 
 logger = logging.getLogger(__name__)
 
 pref = Preferences(directory="/data", filename="preferences_mrb.py")
 
-token = os.getenv('TELEGRAM_BOT_API_KEY')
+token = os.getenv("TELEGRAM_BOT_API_KEY")
 bot = AsyncTeleBot(token, parse_mode=None)
 
 PRAYERS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]
@@ -30,15 +31,15 @@ timers = dict()
 run_ids = dict()
 run_id = 0
 
-WEBHOOK_HOST = 'muezzin-reminder-bot.fly.dev'
-WEBHOOK_PORT = int(os.getenv('PORT', 8080))
-WEBHOOK_LISTEN = '0.0.0.0'
+WEBHOOK_HOST = "muezzin-reminder-bot.fly.dev"
+WEBHOOK_PORT = int(os.getenv("PORT", 8080))
+WEBHOOK_LISTEN = "0.0.0.0"
 WEBHOOK_URL_BASE = "https://{}".format(WEBHOOK_HOST)
 WEBHOOK_URL_PATH = "/{}/".format(token)
 
 
 class Timer:
-    #https://stackoverflow.com/a/45430833
+    # https://stackoverflow.com/a/45430833
     def __init__(self, timeout, callback=None, *args, **kwargs):
         self._timeout = timeout
         self._callback = callback
@@ -86,7 +87,7 @@ class BotSettings:
                 "selected_zone": self.selected_zone,
                 "alerts_enabled": self.alerts_enabled,
                 "response_timeout": self.response_timeout,
-                "alert_noresponse": self.alert_noresponse
+                "alert_noresponse": self.alert_noresponse,
             }
         }
         if pref.preferences:
@@ -116,7 +117,6 @@ def get_next_prayer_time(prayer_times, settings):
             settings.current_prayer_num = i - 1
             break
     logger.info(PRAYERS[next_prayer_num])
-    settings.update_preferences()
     next_prayer_time = time_to_mili(prayer_times[next_prayer_num]["time"])
     return next_prayer_time
 
@@ -127,7 +127,7 @@ async def list_zones(context):
     for zone in ZONES:
         text += "`" + zone + "`, "
 
-    text = text[:-2].replace('.', '\\.')  # remove trailing comma and space
+    text = text[:-2].replace(".", "\\.")  # remove trailing comma and space
 
     await bot.send_message(context.chat.id, text, parse_mode="MarkdownV2")
 
@@ -194,7 +194,7 @@ async def enable_alerts(context):
             settings.selected_zone = zone
             settings.alerts_enabled = True
             settings.update_preferences()
-            zone = zone.replace('.', '\\.')
+            zone = zone.replace(".", "\\.")
             text = f"Alerts enabled for {zone.title()}\. Alert will be sent *{settings.alert_time // 60} minutes* before the next azan\."
         else:
             text = "Zone not found\. Make sure the selected zone is valid\. View valid zones by sending `/list_zones`\."
@@ -318,7 +318,10 @@ async def set_muezzin(message):
 
 
 async def alert_response_timeout(context, settings, muezzin, reply):
-    Timer(settings.alert_time - settings.response_timeout, bot.delete_message(reply.chat.id, reply.message_id))
+    Timer(
+        settings.alert_time - settings.response_timeout,
+        bot.delete_message(reply.chat.id, reply.message_id),
+    )
 
     if settings.alert_noresponse:
         text = f"@{muezzin} did not confirm availability. Requesting other muezzins to be on standby."
@@ -354,11 +357,18 @@ async def ask_availability(context, settings, muezzin):
         InlineKeyboardButton(text="I'm not available", callback_data="not_available"),
     )
 
-    text = f'@{muezzin} Are you available?'
+    text = f"@{muezzin} Are you available?"
 
     reply = await bot.send_message(settings.chatid, text, reply_markup=keyboard)
 
-    timers[f"{settings.chatid}_avail"] = Timer(settings.response_timeout, alert_response_timeout, context=context, settings=settings, muezzin=muezzin, reply=reply)
+    timers[f"{settings.chatid}_avail"] = Timer(
+        settings.response_timeout,
+        alert_response_timeout,
+        context=context,
+        settings=settings,
+        muezzin=muezzin,
+        reply=reply,
+    )
 
 
 async def restart_alerts():
@@ -385,7 +395,7 @@ async def help(message):
 
 # Process webhook calls
 async def handle(request):
-    if request.match_info.get('token') == bot.token:
+    if request.match_info.get("token") == bot.token:
         request_body_dict = await request.json()
         update = telebot.types.Update.de_json(request_body_dict)
         asyncio.ensure_future(bot.process_new_updates([update]))
@@ -396,9 +406,9 @@ async def handle(request):
 
 # Remove webhook and closing session before exiting
 async def shutdown(app):
-    logger.info('Shutting down: removing webhook')
+    logger.info("Shutting down: removing webhook")
     await bot.remove_webhook()
-    logger.info('Shutting down: closing session')
+    logger.info("Shutting down: closing session")
     await bot.close_session()
 
 
@@ -408,20 +418,20 @@ async def setup():
     bot.register_message_handler(enable_alerts, commands=["enable"])
     bot.register_message_handler(set_muezzin, commands=["set_muezzin"])
     bot.register_message_handler(send_schedule, commands=["show_schedule"])
-    bot.register_message_handler(list_zones, commands=["list_zones"]) 
-    bot.register_message_handler(send_prayer_times, commands=["show_prayer_times"]) 
-    bot.register_message_handler(change_alert_time, commands=["change_alert_time"]) 
+    bot.register_message_handler(list_zones, commands=["list_zones"])
+    bot.register_message_handler(send_prayer_times, commands=["show_prayer_times"])
+    bot.register_message_handler(change_alert_time, commands=["change_alert_time"])
     bot.register_callback_query_handler(availabilty_handler, func=lambda call: True)
 
     # Remove webhook, it fails sometimes the set if there is a previous webhook
-    logger.info('Starting up: removing old webhook')
+    logger.info("Starting up: removing old webhook")
     await bot.remove_webhook()
     # Set webhook
-    logger.info('Starting up: setting webhook')
+    logger.info("Starting up: setting webhook")
     print(WEBHOOK_URL_BASE + WEBHOOK_URL_PATH)
     await bot.set_webhook(url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH)
     app = web.Application()
-    app.router.add_post('/{token}/', handle)
+    app.router.add_post("/{token}/", handle)
     app.on_cleanup.append(shutdown)
 
     # restart alerts
