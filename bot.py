@@ -320,7 +320,7 @@ async def set_muezzin(message):
 async def alert_response_timeout(context, settings, muezzin, reply):
     Timer(
         settings.alert_time - settings.response_timeout,
-        bot.delete_message(reply.chat.id, reply.message_id),
+        bot.delete_message, chat_id=reply.chat.id, message_id=reply.message_id
     )
 
     if settings.alert_noresponse:
