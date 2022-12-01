@@ -257,7 +257,7 @@ async def create_alert(context, settings):
 
     await bot.send_message(settings.chatid, text, parse_mode="MarkdownV2")
 
-    if muezzin is not None:
+    if muezzin:
         await ask_availability(context, settings, muezzin)
 
 
