@@ -220,7 +220,7 @@ async def run_alert(context, settings):
             logger.debug(f"Time to wait: {time_to_wait}")
 
             # wait before continuing
-            await asyncio.sleep(time_to_wait + settings.alert_time + 1)
+            await asyncio.sleep(time_to_wait + settings.alert_time + 180)
 
             curr_id = run_ids.get(settings.chatid)
 
@@ -286,7 +286,7 @@ async def set_alert(context, settings):
             midnight = (now + timedelta(days=1)).replace(
                 hour=0, minute=0, second=0, microsecond=0
             )
-            sleep_duration = midnight.timestamp() - now.timestamp()
+            sleep_duration = midnight.timestamp() - now.timestamp() + 60
             return sleep_duration
         else:
             time_to_wait -= settings.alert_time
