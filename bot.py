@@ -383,12 +383,12 @@ async def restart_alerts():
 
 
 async def help(message):
-    text = "*Usage:*\n`/enable ZONE_NAME` - Enable alerts for the particular zone\.\n\
-                      `/set_muezzin PRAYER_NAME USERNAME` - Assign a muezzin for a particular prayer\.\n\
-                      `/start` - Start the bot\.\n\
-                      `/list_zones` - View available zones\.\n\
-                      `/show_schedule` - View current muezzin schedule\.\n\
-                      `/show_prayer_times` - View prayer times for your zone\."
+    text = "*Usage:*\n`/enable ZONE_NAME` \- Enable alerts for the particular zone\.\n\
+                      `/set_muezzin PRAYER_NAME USERNAME` \- Assign a muezzin for a particular prayer\.\n\
+                      `/start` \- Start the bot\.\n\
+                      `/list_zones` \- View available zones\.\n\
+                      `/show_schedule` \- View current muezzin schedule\.\n\
+                      `/show_prayer_times` \- View prayer times for your zone\."
 
     await bot.reply_to(message, text, parse_mode="MarkdownV2")
 
